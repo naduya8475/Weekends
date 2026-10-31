@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5efff" />
+    <meta name="description" content="주말과 휴일의 하루를 가볍게 계획해 보세요." />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Weekends — 주말 계획</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./index.html" aria-label="Weekends 홈">
+          <span class="brand-mark" aria-hidden="true">w.</span>
+          <span>weekends</span>
+        </a>
+        <span class="save-state" id="save-state"><span class="save-dot"></span> 이 기기에 저장돼요</span>
+      </header>
+      <nav class="main-tabs" aria-label="주요 메뉴">
+        <a class="main-tab" href="./index.html" aria-current="page">주말 계획</a>
+        <a class="main-tab" href="./gallery.html">보석함 <span aria-hidden="true">💎</span></a>
+      </nav>
+
+      <section class="week-heading" aria-labelledby="week-title">
+        <div class="week-copy">
+          <p class="eyebrow">내 보석같은 주말 <span aria-hidden="true">💎</span></p>
+          <div class="week-title-row">
+            <button class="week-nav" id="previous-week" aria-label="이전 주">‹</button>
+            <h1 id="week-title">W44 <span>(10/26–11/1)</span></h1>
+            <button class="week-nav" id="next-week" aria-label="다음 주">›</button>
+          </div>
+        </div>
+        <button class="add-day-button" id="open-day-dialog">
+          <span aria-hidden="true">＋</span>
+          <span>날짜 추가</span>
+        </button>
+      </section>
+
+      <section class="planner" aria-label="주간 계획">
+        <div class="days-track" id="days-track" aria-live="polite"></div>
+      </section>
+
+    </main>
+
+    <dialog class="modal day-modal" id="day-dialog">
+      <form id="day-form">
+        <div class="modal-top">
+          <div>
+            <p class="eyebrow">내 보석같은 주말</p>
+            <h2>날짜 추가</h2>
+          </div>
+          <button type="button" class="icon-button close-dialog" aria-label="닫기">×</button>
+        </div>
+        <label class="field-label" for="day-date">추가할 날짜</label>
+        <input id="day-date" name="date" type="date" required />
+        <p class="form-note" id="day-form-note">선택한 주의 월요일부터 일요일 사이 날짜를 추가할 수 있어요.</p>
+        <button class="primary-button" type="submit">날짜 추가하기 <span aria-hidden="true">→</span></button>
+      </form>
+    </dialog>
+
+    <dialog class="modal photo-modal" id="photo-dialog">
+      <form id="photo-form">
+        <div class="modal-top">
+          <div>
+            <p class="eyebrow">SET THE MOOD</p>
+          </div>
+          <button type="button" class="icon-button close-dialog" aria-label="닫기">×</button>
+        </div>
+        <div class="crop-stage" id="crop-stage">
+          <img id="crop-image" alt="사진 자르기 미리보기" />
+          <span class="crop-guide">이 영역이 일정 칸의 배경이 돼요</span>
+        </div>
+        <label class="zoom-control" for="photo-zoom">
+          <span>축소</span>
+          <input id="photo-zoom" type="range" min="1" max="3" step="0.01" value="1" />
+          <span>확대</span>
+        </label>
+        <p class="form-note">사진을 드래그해 보이는 영역을 조절할 수 있어요.</p>
+        <div class="modal-actions">
+          <button class="secondary-button close-dialog" type="button">취소</button>
+          <button class="primary-button" type="submit">이 사진 사용하기 <span aria-hidden="true">→</span></button>
+        </div>
+      </form>
+    </dialog>
+
+    <input id="photo-file" type="file" accept="image/*" hidden />
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js" defer></script>
+  </body>
+</html>

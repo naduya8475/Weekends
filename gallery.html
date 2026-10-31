@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#f5efff" />
+    <meta name="description" content="주말 계획에 담아 둔 사진을 모아 보는 보석함." />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+    <title>Weekends — 보석함</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="./index.html" aria-label="Weekends 홈">
+          <span class="brand-mark" aria-hidden="true">w.</span>
+          <span>weekends</span>
+        </a>
+        <span class="save-state"><span class="save-dot"></span> 나의 작은 사진첩</span>
+      </header>
+      <nav class="main-tabs" aria-label="주요 메뉴">
+        <a class="main-tab" href="./index.html">주말 계획</a>
+        <a class="main-tab" href="./gallery.html" aria-current="page">보석함 <span aria-hidden="true">💎</span></a>
+      </nav>
+      <section class="gallery-heading" aria-labelledby="gallery-title">
+        <p class="eyebrow">MY WEEKEND MOMENTS</p>
+        <h1 id="gallery-title">보석함 <span aria-hidden="true">💎</span></h1>
+        <p class="gallery-caption">주말의 반짝이는 순간들, 최신 사진부터 모아봤어요.</p>
+      </section>
+      <section aria-label="저장한 사진">
+        <div class="gallery-grid" id="gallery-grid" hidden></div>
+        <div class="gallery-empty" id="gallery-empty" role="status">아직 사진이 없어요.<br />주말 계획에서 사진을 추가해 주세요!</div>
+      </section>
+    </main>
+    <dialog class="modal lightbox-modal" id="lightbox-dialog" aria-label="원본 사진 보기">
+      <button class="icon-button lightbox-close" id="lightbox-close" type="button" aria-label="닫기">×</button>
+      <img class="lightbox-image" id="lightbox-image" alt="선택한 사진 원본" />
+    </dialog>
+    <script src="./gallery.js" defer></script>
+  </body>
+</html>
