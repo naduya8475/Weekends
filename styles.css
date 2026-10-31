@@ -85,6 +85,46 @@ button { color: inherit; }
   color: #787b72;
   font-size: 11px;
 }
+.account-bar { display: flex; align-items: center; gap: 11px; }
+.account-email { max-width: 190px; overflow: hidden; color: #786c7d; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.sign-out-button, .auth-mode-button {
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #766582;
+  cursor: pointer;
+  font-size: 11px;
+}
+.sign-out-button:hover, .auth-mode-button:hover { background: #eee7fb; }
+.planner-content[hidden], .auth-panel[hidden] { display: none; }
+.auth-panel {
+  width: min(100%, 430px);
+  margin: clamp(42px, 10vh, 100px) auto;
+  padding: clamp(22px, 6vw, 34px);
+  border: 1.5px solid #ead7e3;
+  border-radius: 23px;
+  background: rgba(255,254,251,.94);
+  box-shadow: 0 7px 25px rgba(111, 73, 110, .08);
+}
+.auth-panel h1 { margin: 0; color: #59476a; font-size: clamp(27px, 7vw, 34px); }
+.auth-description { margin: 10px 0 23px; color: #897b8c; font-size: 12px; line-height: 1.7; }
+.auth-panel input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid #ead7e3;
+  border-radius: 12px;
+  outline: none;
+  background: #fffaf0;
+  color: var(--ink);
+  font-size: 14px;
+}
+.auth-panel input:focus { border-color: #6cc3b3; box-shadow: 0 0 0 3px rgba(111, 195, 179, .18); }
+.auth-submit { margin-top: 21px; }
+.auth-mode-button { display: block; margin: 13px auto 0; padding: 8px 12px; }
+.auth-message { min-height: 20px; margin: 14px 0 0; color: #765d90; font-size: 12px; line-height: 1.6; text-align: center; }
+.auth-footnote { margin: 18px 0 0; color: #9a8f9d; font-size: 10px; line-height: 1.6; text-align: center; }
 .save-dot, .caption-dot { width: 8px; height: 8px; border: 1px solid #433746; border-radius: 50%; background: #ff9a9e; }
 
 .main-tabs {
@@ -678,6 +718,9 @@ h1 span {
 
 @media (max-width: 560px) {
   .app-shell { width: min(100% - 32px, 430px); padding-top: max(19px, env(safe-area-inset-top)); padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+  .account-bar { gap: 5px; }
+  .account-email { max-width: 110px; font-size: 9px; }
+  .save-state { gap: 4px; font-size: 9px; }
   .week-heading { align-items: flex-end; flex-wrap: wrap; row-gap: 12px; margin: 43px 0 24px; }
   .week-title-row { gap: 6px; }
   h1 { font-size: 29px; letter-spacing: -1.3px; }

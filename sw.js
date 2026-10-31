@@ -1,5 +1,5 @@
-const CACHE_NAME = "weekends-shell-v5";
-const APP_ASSETS = ["./", "./index.html", "./gallery.html", "./styles.css", "./app.js", "./gallery.js", "./manifest.json", "./icon.svg"];
+const CACHE_NAME = "weekends-shell-v6";
+const APP_ASSETS = ["./", "./index.html", "./gallery.html", "./styles.css", "./app.js", "./gallery.js", "./supabase-config.js", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_ASSETS)));

@@ -8,6 +8,18 @@ const STORE_PREFIX = "weekends-plans-v1";
 
 const daysTrack = document.querySelector("#days-track");
 const weekTitle = document.querySelector("#week-title");
+const authPanel = document.querySelector("#auth-panel");
+const loadingPanel = document.querySelector("#loading-panel");
+const plannerContent = document.querySelector("#planner-content");
+const authForm = document.querySelector("#auth-form");
+const authEmail = document.querySelector("#auth-email");
+const authPassword = document.querySelector("#auth-password");
+const authSubmit = document.querySelector("#auth-submit");
+const authModeToggle = document.querySelector("#auth-mode-toggle");
+const authMessage = document.querySelector("#auth-message");
+const accountEmail = document.querySelector("#account-email");
+const signOutButton = document.querySelector("#sign-out-button");
+const saveLabel = document.querySelector(".save-label");
 const dayDialog = document.querySelector("#day-dialog");
 const dayForm = document.querySelector("#day-form");
 const calendarDialog = document.querySelector("#calendar-dialog");
@@ -22,7 +34,12 @@ const photoZoom = document.querySelector("#photo-zoom");
 const saveState = document.querySelector("#save-state");
 const toast = document.querySelector("#toast");
 
-const state = { weekStart: getMonday(new Date()), days: [], plans: {}, notes: {} };
+const state = { weekStart: getMonday(new Date()), days: [], plans: {}, notes: {}, user: null };
+const config = window.WEEKENDS_SUPABASE_CONFIG;
+let supabaseClient = null;
+let isSignUpMode = false;
+let weekLoadRequest = 0;
+const migratedUsers = new Set();
 let photoTarget = null;
 let cropPointer = null;
 let cropObjectUrl = null;
@@ -72,45 +89,142 @@ function storageKey() {
   return `${STORE_PREFIX}:${dateKey(state.weekStart)}`;
 }
 
-function loadWeek() {
+function setWeekData(saved) {
+  const baseWeekend = weekDates().filter((date) => date.getDay() === 0 || date.getDay() === 6)
+    .map((date) => ({ date: dateKey(date), kind: "weekend", name: "" }));
+  const savedDays = saved && Array.isArray(saved.days) ? saved.days : [];
+  state.days = [...baseWeekend];
+  savedDays.forEach((day) => {
+    if (day && weekDates().some((date) => dateKey(date) === day.date) && !state.days.some((entry) => entry.date === day.date)) {
+      state.days.push(day);
+    }
+  });
+  state.plans = saved && saved.plans && typeof saved.plans === "object" ? saved.plans : {};
+  state.notes = saved && saved.notes && typeof saved.notes === "object" ? saved.notes : {};
+}
+
+function loadLocalWeek() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey()) || "{}");
-    const baseWeekend = weekDates().filter((date) => date.getDay() === 0 || date.getDay() === 6)
-      .map((date) => ({ date: dateKey(date), kind: "weekend", name: "" }));
-    const savedDays = Array.isArray(saved.days) ? saved.days : [];
-    state.days = [...baseWeekend];
-    savedDays.forEach((day) => {
-      if (day && weekDates().some((date) => dateKey(date) === day.date) && !state.days.some((entry) => entry.date === day.date)) {
-        state.days.push(day);
-      }
-    });
-    state.plans = saved.plans && typeof saved.plans === "object" ? saved.plans : {};
-    state.notes = saved.notes && typeof saved.notes === "object" ? saved.notes : {};
+    setWeekData(saved);
   } catch (error) {
     console.error("주간 계획을 불러오지 못했습니다.", error);
-    state.days = weekDates().filter((date) => date.getDay() === 0 || date.getDay() === 6)
-      .map((date) => ({ date: dateKey(date), kind: "weekend", name: "" }));
-    state.plans = {};
-    state.notes = {};
+    setWeekData(null);
     showToast("저장된 계획을 읽지 못했어요.");
   }
   render();
 }
 
+function loadWeek() {
+  if (!state.user || !supabaseClient) return;
+  const weekStart = dateKey(state.weekStart);
+  void loadCloudWeek(state.user, weekStart);
+}
+
+async function migrateLocalWeeks(user) {
+  if (migratedUsers.has(user.id)) return;
+  const rows = [];
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (!key || !key.startsWith(`${STORE_PREFIX}:`)) continue;
+    const weekStart = key.slice(STORE_PREFIX.length + 1);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) continue;
+    try {
+      const data = JSON.parse(localStorage.getItem(key) || "{}");
+      rows.push({ user_id: user.id, week_start: weekStart, data });
+    } catch (error) {
+      console.error(`저장된 ${weekStart} 주간 계획을 이전하지 못했습니다.`, error);
+      showToast("일부 기기 저장 데이터를 읽지 못해 이전하지 못했어요.");
+    }
+  }
+  if (rows.length) {
+    const { error } = await supabaseClient
+      .from("week_plans")
+      .upsert(rows, { onConflict: "user_id,week_start", ignoreDuplicates: true });
+    if (error) throw error;
+  }
+  migratedUsers.add(user.id);
+}
+
+async function loadCloudWeek(user, weekStart) {
+  const requestId = ++weekLoadRequest;
+  daysTrack.inert = true;
+  daysTrack.setAttribute("aria-busy", "true");
+  saveLabel.textContent = "클라우드에서 불러오는 중";
+  try {
+    try {
+      await migrateLocalWeeks(user);
+    } catch (error) {
+      console.error("기기에 저장된 계획을 클라우드로 이전하지 못했습니다.", error);
+      showToast("기기 계획 일부를 이전하지 못했어요. 기존 클라우드 계획은 유지됩니다.");
+    }
+    const { data, error } = await supabaseClient
+      .from("week_plans")
+      .select("data")
+      .eq("user_id", user.id)
+      .eq("week_start", weekStart)
+      .maybeSingle();
+    if (error) throw error;
+    if (requestId !== weekLoadRequest || state.user?.id !== user.id || dateKey(state.weekStart) !== weekStart) return;
+    setWeekData(data?.data || null);
+    render();
+    daysTrack.inert = false;
+    daysTrack.setAttribute("aria-busy", "false");
+    saveLabel.textContent = "계정과 동기화돼요";
+  } catch (error) {
+    console.error("클라우드 주간 계획을 불러오지 못했습니다.", error);
+    if (requestId !== weekLoadRequest || state.user?.id !== user.id) return;
+    setWeekData(null);
+    render();
+    daysTrack.inert = false;
+    daysTrack.setAttribute("aria-busy", "false");
+    saveLabel.textContent = "동기화 오류";
+    showToast("계획을 불러오지 못했어요. 연결과 Supabase 정책을 확인해 주세요.");
+  }
+}
+
 function saveWeek() {
   const key = storageKey();
+  const weekStart = dateKey(state.weekStart);
+  const user = state.user;
   const snapshot = JSON.stringify({ days: state.days, plans: state.plans, notes: state.notes });
   saveState.classList.add("saving");
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
       localStorage.setItem(key, snapshot);
-      saveState.classList.remove("saving");
     } catch (error) {
       console.error("주간 계획을 저장하지 못했습니다.", error);
-      saveState.classList.remove("saving");
       showToast("저장 공간이 부족해요. 사진을 줄이거나 삭제해 주세요.");
     }
+    if (!user || !supabaseClient) {
+      saveState.classList.remove("saving");
+      return;
+    }
+    saveLabel.textContent = "동기화 중";
+    supabaseClient.from("week_plans").upsert({
+      user_id: user.id,
+      week_start: weekStart,
+      data: JSON.parse(snapshot),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,week_start" }).then(({ error }) => {
+      if (state.user?.id !== user.id) return;
+      saveState.classList.remove("saving");
+      if (error) {
+        console.error("클라우드에 주간 계획을 저장하지 못했습니다.", error);
+        saveLabel.textContent = "동기화 오류";
+        showToast("클라우드 저장에 실패했어요. 인터넷 연결을 확인해 주세요.");
+        return;
+      }
+      saveLabel.textContent = "계정과 동기화돼요";
+    }).catch((error) => {
+      console.error("클라우드에 주간 계획을 저장하지 못했습니다.", error);
+      if (state.user?.id === user.id) {
+        saveState.classList.remove("saving");
+        saveLabel.textContent = "동기화 오류";
+        showToast("클라우드 저장에 실패했어요. 인터넷 연결을 확인해 주세요.");
+      }
+    });
   }, 180);
 }
 
@@ -375,6 +489,124 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("visible"), 2800);
 }
 
+function updateAuthMode() {
+  authSubmit.textContent = isSignUpMode ? "회원가입" : "로그인";
+  authModeToggle.textContent = isSignUpMode
+    ? "이미 계정이 있나요? 로그인"
+    : "처음 오셨나요? 회원가입";
+  authPassword.autocomplete = isSignUpMode ? "new-password" : "current-password";
+  authMessage.textContent = "";
+}
+
+async function setActiveSession(session) {
+  const user = session?.user || null;
+  state.user = user;
+  if (!user) {
+    weekLoadRequest += 1;
+    authPanel.hidden = false;
+    loadingPanel.hidden = true;
+    plannerContent.hidden = true;
+    accountEmail.hidden = true;
+    signOutButton.hidden = true;
+    saveLabel.textContent = "로그인해 주세요";
+    return;
+  }
+  authPanel.hidden = true;
+  loadingPanel.hidden = false;
+  plannerContent.hidden = true;
+  accountEmail.textContent = user.email || "";
+  accountEmail.hidden = !user.email;
+  signOutButton.hidden = false;
+  await loadCloudWeek(user, dateKey(state.weekStart));
+  if (state.user?.id === user.id) {
+    loadingPanel.hidden = true;
+    plannerContent.hidden = false;
+  }
+}
+
+async function initializeSupabase() {
+  if (!config || !config.url || !config.publishableKey
+    || config.url.includes("YOUR_") || config.publishableKey.includes("YOUR_")
+    || !window.supabase?.createClient) {
+    authPanel.hidden = false;
+    loadingPanel.hidden = true;
+    plannerContent.hidden = true;
+    saveLabel.textContent = "연결 설정 필요";
+    authMessage.textContent = "Supabase 연결 설정을 확인해 주세요.";
+    return;
+  }
+
+  try {
+    supabaseClient = window.supabase.createClient(config.url, config.publishableKey);
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    await setActiveSession(data.session);
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      queueMicrotask(() => {
+        setActiveSession(session).catch((error) => {
+          console.error("로그인 상태를 적용하지 못했습니다.", error);
+          authMessage.textContent = "로그인 상태를 확인하지 못했어요. 페이지를 새로고침해 주세요.";
+        });
+      });
+    });
+  } catch (error) {
+    console.error("Supabase에 연결하지 못했습니다.", error);
+    authPanel.hidden = false;
+    loadingPanel.hidden = true;
+    plannerContent.hidden = true;
+    saveLabel.textContent = "연결 오류";
+    authMessage.textContent = "Supabase에 연결하지 못했어요. Project URL과 공개 키를 확인해 주세요.";
+  }
+}
+
+authModeToggle.addEventListener("click", () => {
+  isSignUpMode = !isSignUpMode;
+  updateAuthMode();
+});
+
+authForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!supabaseClient) {
+    authMessage.textContent = "Supabase 연결을 먼저 확인해 주세요.";
+    return;
+  }
+  authSubmit.disabled = true;
+  authMessage.textContent = isSignUpMode ? "회원가입 중..." : "로그인 중...";
+  try {
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    const result = isSignUpMode
+      ? await supabaseClient.auth.signUp({ email, password })
+      : await supabaseClient.auth.signInWithPassword({ email, password });
+    if (result.error) throw result.error;
+    if (isSignUpMode && !result.data.session) {
+      authMessage.textContent = "가입 확인 메일을 보냈어요. 메일의 링크를 눌러 가입을 완료해 주세요.";
+      return;
+    }
+    authMessage.textContent = "";
+    await setActiveSession(result.data.session);
+  } catch (error) {
+    console.error(isSignUpMode ? "회원가입에 실패했습니다." : "로그인에 실패했습니다.", error);
+    authMessage.textContent = error.message || "요청을 완료하지 못했어요. 입력한 정보를 확인해 주세요.";
+  } finally {
+    authSubmit.disabled = false;
+  }
+});
+
+signOutButton.addEventListener("click", async () => {
+  signOutButton.disabled = true;
+  try {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) throw error;
+    await setActiveSession(null);
+  } catch (error) {
+    console.error("로그아웃하지 못했습니다.", error);
+    showToast("로그아웃하지 못했어요. 다시 시도해 주세요.");
+  } finally {
+    signOutButton.disabled = false;
+  }
+});
+
 function openDayDialog() {
   const dates = weekDates();
   const firstDay = dateKey(dates[0]);
@@ -601,4 +833,4 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
   });
 }
 
-loadWeek();
+initializeSupabase();
