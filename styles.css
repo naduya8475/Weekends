@@ -168,7 +168,7 @@ h1 span {
 .week-nav:hover, .icon-button:hover { background: #fff0ad; transform: translateY(-1px); }
 .week-subtitle { margin: 10px 0 0 43px; color: #816d81; font-size: 14px; }
 
-.add-day-button, .primary-button, .secondary-button {
+.add-day-button, .other-date-button, .primary-button, .secondary-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -189,6 +189,23 @@ h1 span {
 }
 .add-day-button span:first-child { font-size: 17px; font-weight: 400; }
 .add-day-button:hover { background: #a7e6d3; transform: translateY(-1px); }
+.week-actions { display: flex; align-items: center; gap: 8px; }
+.other-date-button {
+  min-height: 43px;
+  padding: 0 13px;
+  border-color: #cbb8df;
+  background: #fffdf6;
+  color: #665475;
+}
+.other-date-button:hover { background: #eee7fb; transform: translateY(-1px); }
+.other-date-button svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
 
 .planner { margin-top: 6px; }
 .planner-caption { min-height: 37px; margin-bottom: 12px; color: #59485d; font-size: 13px; font-weight: 700; }
@@ -455,6 +472,66 @@ h1 span {
   font-size: 13px;
 }
 .modal input:focus, .modal select:focus { border-color: #6cc3b3; box-shadow: 0 0 0 3px rgba(111, 195, 179, .18); }
+.calendar-modal { width: min(100% - 28px, 430px); }
+.calendar-modal .modal-top { margin-bottom: 16px; }
+.calendar-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.calendar-nav {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #e8c9d7;
+  border-radius: 50%;
+  background: #fffdf6;
+  color: #825e83;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+.calendar-nav:hover { background: #fff0ad; }
+.month-picker-label { position: relative; color: #59476a; font-size: 17px; font-weight: 700; }
+.month-picker-label input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.calendar-note { margin: 12px 0 10px; color: #8d7c97; font-size: 11px; }
+.calendar-grid { display: grid; gap: 3px; }
+.calendar-weekday, .calendar-week { display: grid; grid-template-columns: 42px repeat(7, minmax(0, 1fr)); gap: 3px; }
+.calendar-weekday { align-items: center; padding-bottom: 4px; color: #95869b; font-size: 10px; text-align: center; }
+.calendar-weekday span:first-child { color: #775f8d; }
+.calendar-week {
+  width: 100%;
+  align-items: center;
+  min-height: 39px;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.calendar-week:hover, .calendar-week:focus-visible { background: #e2ddfa; outline: none; }
+.calendar-week.current-week { background: #f2ecfb; }
+.calendar-week[aria-pressed="true"] { box-shadow: inset 0 0 0 1px #bda9d8; }
+.calendar-week-number, .calendar-day {
+  display: grid;
+  min-width: 0;
+  height: 34px;
+  padding: 0;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.calendar-week-number { color: #806b94; font-family: Fredoka, sans-serif; font-size: 10px; font-weight: 700; }
+.calendar-day { color: #51445d; }
+.calendar-day.outside-month { color: #b6abb9; }
+.calendar-day.week-start { border-radius: 10px; background: #bcf0df; color: #355a52; font-weight: 700; }
 .form-note { margin: 11px 0 19px; color: #97988e; font-size: 10px; line-height: 1.6; }
 .primary-button { width: 100%; padding: 0 16px; background: #39aaa0; color: white; }
 .primary-button:hover { background: var(--green-dark); }
@@ -601,12 +678,16 @@ h1 span {
 
 @media (max-width: 560px) {
   .app-shell { width: min(100% - 32px, 430px); padding-top: max(19px, env(safe-area-inset-top)); padding-bottom: max(20px, env(safe-area-inset-bottom)); }
-  .week-heading { align-items: flex-end; margin: 43px 0 24px; }
+  .week-heading { align-items: flex-end; flex-wrap: wrap; row-gap: 12px; margin: 43px 0 24px; }
   .week-title-row { gap: 6px; }
   h1 { font-size: 29px; letter-spacing: -1.3px; }
   .week-nav { width: 28px; height: 28px; }
   .week-subtitle { margin-left: 34px; font-size: 11px; }
-  .add-day-button { min-height: 39px; gap: 5px; padding: 0 11px; font-size: 10px; }
+  .week-actions { gap: 5px; margin-left: auto; }
+  .add-day-button, .other-date-button { min-height: 39px; gap: 5px; padding: 0 9px; font-size: 10px; }
+  .other-date-button svg { width: 15px; height: 15px; }
+  .calendar-weekday, .calendar-week { grid-template-columns: 36px repeat(7, minmax(0, 1fr)); gap: 1px; }
+  .calendar-day, .calendar-week-number { height: 32px; font-size: 11px; }
   .planner-caption { margin-bottom: 8px; }
   .scroll-hint { font-size: 9px; }
   .days-track { grid-template-columns: minmax(0, 1fr); gap: 13px; margin-right: 0; padding-right: 2px; }

@@ -33,10 +33,19 @@
             <button class="week-nav" id="next-week" aria-label="다음 주">›</button>
           </div>
         </div>
-        <button class="add-day-button" id="open-day-dialog">
-          <span aria-hidden="true">＋</span>
-          <span>날짜 추가</span>
-        </button>
+        <div class="week-actions">
+          <button class="other-date-button" id="open-calendar-dialog" type="button" aria-label="다른 날짜의 주 선택">
+            <svg aria-hidden="true" viewBox="0 0 20 20" fill="none">
+              <rect x="2.5" y="4" width="15" height="13" rx="2.5"></rect>
+              <path d="M6 2.5v3M14 2.5v3M2.5 8h15M6 11h2M11 11h3M6 14h2"></path>
+            </svg>
+            <span>다른 날짜</span>
+          </button>
+          <button class="add-day-button" id="open-day-dialog">
+            <span aria-hidden="true">＋</span>
+            <span>날짜 추가</span>
+          </button>
+        </div>
       </section>
 
       <section class="planner" aria-label="주간 계획">
@@ -59,6 +68,26 @@
         <p class="form-note" id="day-form-note">선택한 주의 월요일부터 일요일 사이 날짜를 추가할 수 있어요.</p>
         <button class="primary-button" type="submit">날짜 추가하기 <span aria-hidden="true">→</span></button>
       </form>
+    </dialog>
+
+    <dialog class="modal calendar-modal" id="calendar-dialog" aria-labelledby="calendar-title">
+      <div class="modal-top">
+        <div>
+          <p class="eyebrow">JUMP TO A WEEK</p>
+          <h2 id="calendar-title">다른 날짜</h2>
+        </div>
+        <button type="button" class="icon-button close-dialog" aria-label="닫기">×</button>
+      </div>
+      <div class="calendar-controls">
+        <button class="calendar-nav" id="previous-month" type="button" aria-label="이전 달">‹</button>
+        <label class="month-picker-label" for="calendar-month">
+          <span id="calendar-month-label"></span>
+          <input id="calendar-month" type="month" aria-label="연도와 달 선택" />
+        </label>
+        <button class="calendar-nav" id="next-month" type="button" aria-label="다음 달">›</button>
+      </div>
+      <p class="calendar-note">원하는 주의 한 줄을 누르면 해당 주로 이동해요.</p>
+      <div class="calendar-grid" id="calendar-grid" aria-label="월간 달력"></div>
     </dialog>
 
     <dialog class="modal photo-modal" id="photo-dialog">

@@ -10,6 +10,9 @@ const daysTrack = document.querySelector("#days-track");
 const weekTitle = document.querySelector("#week-title");
 const dayDialog = document.querySelector("#day-dialog");
 const dayForm = document.querySelector("#day-form");
+const calendarDialog = document.querySelector("#calendar-dialog");
+const calendarGrid = document.querySelector("#calendar-grid");
+const calendarMonth = document.querySelector("#calendar-month");
 const photoDialog = document.querySelector("#photo-dialog");
 const photoForm = document.querySelector("#photo-form");
 const photoFile = document.querySelector("#photo-file");
@@ -25,6 +28,7 @@ let cropPointer = null;
 let cropObjectUrl = null;
 let toastTimer;
 let saveTimer;
+let calendarDate = new Date(state.weekStart.getFullYear(), state.weekStart.getMonth(), 1);
 
 function getMonday(date) {
   const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -48,6 +52,12 @@ function weekNumber(date) {
   value.setUTCDate(value.getUTCDate() + 4 - (value.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(value.getUTCFullYear(), 0, 1));
   return Math.ceil(((value - yearStart) / 86400000 + 1) / 7);
+}
+
+function weekYear(date) {
+  const thursday = new Date(date);
+  thursday.setDate(thursday.getDate() + 3);
+  return thursday.getFullYear();
 }
 
 function weekDates() {
@@ -114,6 +124,73 @@ function render() {
   weekTitle.innerHTML = `W${weekNumber(state.weekStart)} <span>(${formatRange(state.weekStart)})</span>`;
   state.days.sort((a, b) => a.date.localeCompare(b.date));
   daysTrack.replaceChildren(...state.days.map(renderDay));
+}
+
+function renderCalendar() {
+  const year = calendarDate.getFullYear();
+  const month = calendarDate.getMonth();
+  const monthValue = `${year}-${String(month + 1).padStart(2, "0")}`;
+  calendarMonth.value = monthValue;
+  document.querySelector("#calendar-month-label").textContent = `${year}년 ${month + 1}월`;
+
+  const headings = document.createElement("div");
+  headings.className = "calendar-weekday";
+  ["주차", "월", "화", "수", "목", "금", "토", "일"].forEach((heading) => {
+    const cell = document.createElement("span");
+    cell.textContent = heading;
+    headings.append(cell);
+  });
+  const rows = [headings];
+  const firstOfMonth = new Date(year, month, 1);
+  const firstMonday = getMonday(firstOfMonth);
+  const lastOfMonth = new Date(year, month + 1, 0);
+
+  for (let monday = new Date(firstMonday); monday <= lastOfMonth; monday.setDate(monday.getDate() + 7)) {
+    const weekStart = new Date(monday);
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "calendar-week";
+    const isCurrentWeek = dateKey(weekStart) === dateKey(state.weekStart);
+    if (isCurrentWeek) row.classList.add("current-week");
+    row.setAttribute("aria-pressed", String(isCurrentWeek));
+    row.setAttribute("aria-label", `${weekYear(weekStart)}년 ${weekNumber(weekStart)}주, ${formatRange(weekStart)} 선택`);
+    row.addEventListener("click", () => selectWeek(weekStart));
+
+    const weekNumberCell = document.createElement("span");
+    weekNumberCell.className = "calendar-week-number";
+    weekNumberCell.textContent = `W${weekNumber(weekStart)}`;
+    row.append(weekNumberCell);
+
+    for (let index = 0; index < 7; index += 1) {
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + index);
+      const dayCell = document.createElement("span");
+      dayCell.className = "calendar-day";
+      dayCell.textContent = String(date.getDate());
+      if (date.getMonth() !== month) dayCell.classList.add("outside-month");
+      if (dateKey(date) === dateKey(state.weekStart)) dayCell.classList.add("week-start");
+      row.append(dayCell);
+    }
+    rows.push(row);
+  }
+  calendarGrid.replaceChildren(...rows);
+}
+
+function selectWeek(start) {
+  state.weekStart = new Date(start);
+  loadWeek();
+  calendarDialog.close();
+}
+
+function openCalendarDialog() {
+  calendarDate = new Date(state.weekStart.getFullYear(), state.weekStart.getMonth(), 1);
+  renderCalendar();
+  calendarDialog.showModal();
+}
+
+function changeCalendarMonth(amount) {
+  calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + amount, 1);
+  renderCalendar();
 }
 
 function renderDay(day) {
@@ -333,8 +410,17 @@ dayForm.addEventListener("submit", (event) => {
 });
 
 document.querySelector("#open-day-dialog").addEventListener("click", openDayDialog);
+document.querySelector("#open-calendar-dialog").addEventListener("click", openCalendarDialog);
 document.querySelector("#previous-week").addEventListener("click", () => changeWeek(-1));
 document.querySelector("#next-week").addEventListener("click", () => changeWeek(1));
+document.querySelector("#previous-month").addEventListener("click", () => changeCalendarMonth(-1));
+document.querySelector("#next-month").addEventListener("click", () => changeCalendarMonth(1));
+calendarMonth.addEventListener("change", () => {
+  const [year, month] = calendarMonth.value.split("-").map(Number);
+  if (!year || !month) return;
+  calendarDate = new Date(year, month - 1, 1);
+  renderCalendar();
+});
 document.querySelectorAll(".close-dialog").forEach((button) => {
   button.addEventListener("click", () => button.closest("dialog").close());
 });
