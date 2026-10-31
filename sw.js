@@ -1,4 +1,4 @@
-const CACHE_NAME = "weekends-shell-v6";
+const CACHE_NAME = "weekends-shell-v7";
 const APP_ASSETS = ["./", "./index.html", "./gallery.html", "./styles.css", "./app.js", "./gallery.js", "./supabase-config.js", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (event) => {
